@@ -30,7 +30,6 @@ import com.mapbox.navigation.core.arrival.ArrivalController
 import com.mapbox.navigation.core.arrival.ArrivalObserver
 import com.mapbox.navigation.core.arrival.ArrivalProgressObserver
 import com.mapbox.navigation.core.arrival.AutoArrivalController
-import com.mapbox.navigation.core.directions.session.AdjustedRouteOptionsProvider
 import com.mapbox.navigation.core.directions.session.DirectionsSession
 import com.mapbox.navigation.core.directions.session.RoutesObserver
 import com.mapbox.navigation.core.directions.session.RoutesRequestCallback
@@ -39,6 +38,9 @@ import com.mapbox.navigation.core.fasterroute.FasterRouteObserver
 import com.mapbox.navigation.core.internal.MapboxDistanceFormatter
 import com.mapbox.navigation.core.internal.accounts.MapboxNavigationAccounts
 import com.mapbox.navigation.core.internal.trip.service.TripService
+import com.mapbox.navigation.core.reroute.MapboxRerouteController
+import com.mapbox.navigation.core.reroute.RerouteController
+import com.mapbox.navigation.core.routeoptions.MapboxRouteOptionsProvider
 import com.mapbox.navigation.core.routerefresh.RouteRefreshController
 import com.mapbox.navigation.core.telemetry.MapboxNavigationTelemetry
 import com.mapbox.navigation.core.telemetry.events.FeedbackEvent
@@ -132,11 +134,12 @@ constructor(
     private val navigationSession: NavigationSession
     private val navigationAccountsSession = NavigationAccountsSession(navigationOptions.applicationContext)
     private val logger: Logger
-    private val internalRoutesObserver = createInternalRoutesObserver()
-    private val internalOffRouteObserver = createInternalOffRouteObserver()
+    private val internalRoutesObserver: RoutesObserver
+    private val internalOffRouteObserver: OffRouteObserver
     private val fasterRouteController: FasterRouteController
     private val routeRefreshController: RouteRefreshController
     private val arrivalProgressObserver: ArrivalProgressObserver
+    private var rerouteController: RerouteController
 
     private var notificationChannelField: Field? = null
     private val MAPBOX_NAVIGATION_NOTIFICATION_PACKAGE_NAME =
@@ -146,12 +149,14 @@ constructor(
     init {
         ThreadController.init()
         logger = MapboxModuleProvider.createModule(MapboxModuleType.CommonLogger, ::paramsProvider)
-        navigator = NavigationComponentProvider.createNativeNavigator(navigationOptions.deviceProfile, logger)
+        navigator = NavigationComponentProvider.createNativeNavigator(
+            navigationOptions.deviceProfile,
+            logger
+        )
         navigationSession = NavigationComponentProvider.createNavigationSession()
         directionsSession = NavigationComponentProvider.createDirectionsSession(
             MapboxModuleProvider.createModule(MapboxModuleType.NavigationRouter, ::paramsProvider)
         )
-        directionsSession.registerRoutesObserver(internalRoutesObserver)
         directionsSession.registerRoutesObserver(navigationSession)
         val notification: TripNotification = MapboxModuleProvider
             .createModule(MapboxModuleType.NavigationTripNotification, ::paramsProvider)
@@ -173,7 +178,6 @@ constructor(
             navigator = navigator,
             logger = logger
         )
-        tripSession.registerOffRouteObserver(internalOffRouteObserver)
         tripSession.registerStateObserver(navigationSession)
         navigationSession.registerNavigationSessionStateObserver(navigationAccountsSession)
         ifNonNull(accessToken) { token ->
@@ -198,12 +202,31 @@ constructor(
             )
         }
 
-        fasterRouteController = FasterRouteController(directionsSession, tripSession, logger)
+        val routeOptionsProvider = MapboxRouteOptionsProvider(logger)
+
+        fasterRouteController = FasterRouteController(
+            directionsSession,
+            tripSession,
+            routeOptionsProvider,
+            logger
+        )
         routeRefreshController = RouteRefreshController(directionsSession, tripSession, logger)
         routeRefreshController.start()
 
         arrivalProgressObserver = ArrivalProgressObserver(tripSession)
         attachArrivalController()
+
+        rerouteController = MapboxRerouteController(
+            directionsSession,
+            tripSession,
+            routeOptionsProvider,
+            logger
+        )
+
+        internalRoutesObserver = createInternalRoutesObserver()
+        internalOffRouteObserver = createInternalOffRouteObserver()
+        tripSession.registerOffRouteObserver(internalOffRouteObserver)
+        directionsSession.registerRoutesObserver(internalRoutesObserver)
     }
 
     /**
@@ -316,6 +339,13 @@ constructor(
         routeRefreshController.stop()
         ThreadController.cancelAllNonUICoroutines()
         ThreadController.cancelAllUICoroutines()
+    }
+
+    /**
+     * Replace default [MapboxRerouteController]
+     */
+    fun setRerouteController(rerouteController: RerouteController) {
+        this.rerouteController = rerouteController
     }
 
     /**
@@ -554,22 +584,22 @@ constructor(
         override fun onOffRouteStateChanged(offRoute: Boolean) {
             if (offRoute) {
                 reroute()
+            } else {
+                interruptReroute()
             }
         }
     }
 
     private fun reroute() {
-        ifNonNull(tripSession.getEnhancedLocation()) { location ->
-            val optionsRebuilt = AdjustedRouteOptionsProvider.getRouteOptions(
-                directionsSession,
-                tripSession,
-                location
-            ) ?: return
-            directionsSession.requestRoutes(
-                optionsRebuilt,
-                null
-            )
-        }
+        rerouteController.reroute(object : RerouteController.RoutesCallback {
+            override fun onNewRoutes(routes: List<DirectionsRoute>) {
+                setRoutes(routes)
+            }
+        })
+    }
+
+    private fun interruptReroute() {
+        rerouteController.interruptReroute()
     }
 
     private fun obtainUserAgent(isFromNavigationUi: Boolean): String {
