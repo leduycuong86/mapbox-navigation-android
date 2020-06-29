@@ -45,7 +45,7 @@ class MapboxRouteOptionsProviderTest {
         val routeProgress: RouteProgress = mockk(relaxed = true)
 
         val newRouteOptions =
-            routeRefreshAdapter.newRouteOptions(routeOptions, routeProgress, location)
+            routeRefreshAdapter.update(routeOptions, routeProgress, location)
         assertNotNull(newRouteOptions)
 
         val expectedBearings = listOf(
@@ -68,7 +68,7 @@ class MapboxRouteOptionsProviderTest {
         val routeProgress: RouteProgress = mockk(relaxed = true)
 
         val newRouteOptions =
-            routeRefreshAdapter.newRouteOptions(routeOptions, routeProgress, location)
+            routeRefreshAdapter.update(routeOptions, routeProgress, location)
         assertNotNull(newRouteOptions)
 
         val expectedBearings = listOf(
@@ -95,7 +95,7 @@ class MapboxRouteOptionsProviderTest {
 
             assertNull(
                 message,
-                routeRefreshAdapter.newRouteOptions(routeOptions, routeProgress, location)
+                routeRefreshAdapter.update(routeOptions, routeProgress, location)
             )
         }
     }

@@ -287,7 +287,7 @@ class MapboxNavigationTest {
         }
 
         verify(exactly = 1) { rerouteController.reroute(any()) }
-        verify(exactly = 0) { rerouteController.interruptReroute() }
+        verify(exactly = 0) { rerouteController.interrupt() }
         verify(ordering = Ordering.ORDERED) {
             tripSession.registerOffRouteObserver(any())
             rerouteController.reroute(any())
@@ -307,11 +307,11 @@ class MapboxNavigationTest {
         }
 
         verify(exactly = 1) { rerouteController.reroute(any()) }
-        verify(exactly = 1) { rerouteController.interruptReroute() }
+        verify(exactly = 1) { rerouteController.interrupt() }
         verify(ordering = Ordering.ORDERED) {
             tripSession.registerOffRouteObserver(capture(observers))
             rerouteController.reroute(any())
-            rerouteController.interruptReroute()
+            rerouteController.interrupt()
         }
     }
 
@@ -357,14 +357,14 @@ class MapboxNavigationTest {
     fun interrupt_reroute_on_route_request() {
         mapboxNavigation.requestRoutes(mockk())
 
-        verify(exactly = 1) { rerouteController.interruptReroute() }
+        verify(exactly = 1) { rerouteController.interrupt() }
     }
 
     @Test
     fun interrupt_reroute_on_set_routes() {
         mapboxNavigation.setRoutes(mockk())
 
-        verify(exactly = 1) { rerouteController.interruptReroute() }
+        verify(exactly = 1) { rerouteController.interrupt() }
     }
 
     private fun mockLocation() {

@@ -37,7 +37,7 @@ class FasterRouteControllerTest {
 
     @Before
     fun setup() {
-        every { routeOptionsProvider.newRouteOptions(any(), any(), any()) } returns mockk()
+        every { routeOptionsProvider.update(any(), any(), any()) } returns mockk()
 
         every { directionsSession.getRouteOptions() } returns mockk()
         every { directionsSession.requestFasterRoute(any(), capture(routesRequestCallbacks)) } returns mockk()

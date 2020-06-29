@@ -13,10 +13,10 @@ interface RerouteController {
     /**
      * State of Reroute process
      */
-    val rerouteState: RerouteState
+    val state: RerouteState
 
     /**
-     * Invoked whenever re-route is needed. As instance when a driver is off route. Called just after
+     * Invoked whenever re-route is needed. For instance when a driver is off route. Called just after
      * an off route event.
      *
      * @see [OffRouteObserver]
@@ -24,10 +24,10 @@ interface RerouteController {
     fun reroute(routesCallback: RoutesCallback)
 
     /**
-     * Invoked when re-route is not needed anymore (as instance when driver returned to previous route).
+     * Invoked when re-route is not needed anymore (for instance when driver returned to previous route).
      * Might be ignored depends on [RerouteState] (when route has been fetched no sense to interrupt re-route)
      */
-    fun interruptReroute()
+    fun interrupt()
 
     /**
      * Add a RerouteStateObserver to collection and immediately invoke [rerouteStateObserver] with current
@@ -82,7 +82,7 @@ sealed class RerouteState {
      * Reroute process has been interrupted.
      *
      * Might be invoked by:
-     * - [RerouteController.interruptReroute];
+     * - [RerouteController.interrupt];
      * - the NavSdk internally if another route request has been requested(only for the default
      * implementation, see [MapboxRerouteController]).
      *

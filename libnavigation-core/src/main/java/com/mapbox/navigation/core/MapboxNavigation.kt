@@ -139,12 +139,16 @@ constructor(
     private val fasterRouteController: FasterRouteController
     private val routeRefreshController: RouteRefreshController
     private val arrivalProgressObserver: ArrivalProgressObserver
-    private var rerouteController: RerouteController
 
     private var notificationChannelField: Field? = null
     private val MAPBOX_NAVIGATION_NOTIFICATION_PACKAGE_NAME =
         "com.mapbox.navigation.trip.notification.internal.MapboxTripNotification"
     private val MAPBOX_NOTIFICATION_ACTION_CHANNEL = "notificationActionButtonChannel"
+
+    /**
+     * Reroute controller, be default uses [MapboxRerouteController].
+     */
+    var rerouteController: RerouteController
 
     init {
         ThreadController.init()
@@ -341,13 +345,6 @@ constructor(
         routeRefreshController.stop()
         ThreadController.cancelAllNonUICoroutines()
         ThreadController.cancelAllUICoroutines()
-    }
-
-    /**
-     * Replace default [MapboxRerouteController]
-     */
-    fun setRerouteController(rerouteController: RerouteController) {
-        this.rerouteController = rerouteController
     }
 
     /**
@@ -601,7 +598,7 @@ constructor(
     }
 
     private fun interruptReroute() {
-        rerouteController.interruptReroute()
+        rerouteController.interrupt()
     }
 
     private fun stopInternalRouteFetching() {

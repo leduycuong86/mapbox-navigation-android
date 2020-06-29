@@ -22,7 +22,7 @@ internal class MapboxRerouteController(
 
     private val observers = mutableSetOf<RerouteController.RerouteStateObserver>()
 
-    override var rerouteState: RerouteState = RerouteState.Idle
+    override var state: RerouteState = RerouteState.Idle
         set(value) {
             if (field == value) {
                 return
@@ -31,18 +31,18 @@ internal class MapboxRerouteController(
             observers.forEach { it.onNewState(field) }
         }
 
-    internal companion object {
+    private companion object {
         const val TAG = "MapboxRerouteController"
     }
 
     // current implementation ignore `onNewRoutes` callback because `DirectionsSession` update routes internally
     override fun reroute(routesCallback: RerouteController.RoutesCallback) {
-        rerouteState = RerouteState.FetchingRoute
+        state = RerouteState.FetchingRoute
         logger.d(
             Tag(TAG),
             Message("Reroute has been started")
         )
-        routeOptionsProvider.newRouteOptions(
+        routeOptionsProvider.update(
             directionsSession.getRouteOptions(),
             tripSession.getRouteProgress(),
             tripSession.getEnhancedLocation()
@@ -51,8 +51,8 @@ internal class MapboxRerouteController(
                 tryReroute(routeOptions)
             }
             ?: kotlin.run {
-                rerouteState = RerouteState.Failed("Cannot combine route options")
-                rerouteState = RerouteState.Idle
+                state = RerouteState.Failed("Cannot combine route options")
+                state = RerouteState.Idle
             }
     }
 
@@ -64,8 +64,8 @@ internal class MapboxRerouteController(
                     Tag(TAG),
                     Message("Route request has been finished success.")
                 )
-                rerouteState = RerouteState.RouteHasBeenFetched
-                rerouteState = RerouteState.Idle
+                state = RerouteState.RouteHasBeenFetched
+                state = RerouteState.Idle
             }
 
             override fun onRoutesRequestFailure(
@@ -78,8 +78,8 @@ internal class MapboxRerouteController(
                     throwable
                 )
 
-                rerouteState = RerouteState.Failed("Route request has failed", throwable)
-                rerouteState = RerouteState.Idle
+                state = RerouteState.Failed("Route request has failed", throwable)
+                state = RerouteState.Idle
             }
 
             override fun onRoutesRequestCanceled(routeOptions: RouteOptions) {
@@ -87,14 +87,14 @@ internal class MapboxRerouteController(
                     Tag(TAG),
                     Message("Route request has been canceled")
                 )
-                rerouteState = RerouteState.Interrupted
-                rerouteState = RerouteState.Idle
+                state = RerouteState.Interrupted
+                state = RerouteState.Idle
             }
         })
     }
 
-    override fun interruptReroute() {
-        if (rerouteState == RerouteState.FetchingRoute) {
+    override fun interrupt() {
+        if (state == RerouteState.FetchingRoute) {
             directionsSession.cancel() // do not change state here because it's changed into onRoutesRequestCanceled callback
             logger.d(
                 Tag(TAG),
@@ -104,7 +104,7 @@ internal class MapboxRerouteController(
     }
 
     override fun addRerouteStateObserver(rerouteStateObserver: RerouteController.RerouteStateObserver): Boolean {
-        rerouteStateObserver.onNewState(rerouteState)
+        rerouteStateObserver.onNewState(state)
         return observers.add(rerouteStateObserver)
     }
 

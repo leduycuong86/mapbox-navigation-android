@@ -25,7 +25,7 @@ internal class MapboxRouteOptionsProvider(
      *
      * Return *null* in case if cannot combine a new [RouteOptions] instance base on input.
      */
-    override fun newRouteOptions(
+    override fun update(
         routeOptions: RouteOptions?,
         routeProgress: RouteProgress?,
         location: Location?

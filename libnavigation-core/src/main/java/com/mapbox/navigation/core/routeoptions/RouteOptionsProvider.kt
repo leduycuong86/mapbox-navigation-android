@@ -21,7 +21,7 @@ internal interface RouteOptionsProvider {
      * Return *null* in case if cannot combine a new [RouteOptions] instance base on input. When *null*
      * is returned new route is not fetched
      */
-    fun newRouteOptions(
+    fun update(
         routeOptions: RouteOptions?,
         routeProgress: RouteProgress?,
         location: Location?
