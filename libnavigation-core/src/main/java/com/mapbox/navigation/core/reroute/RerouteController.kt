@@ -30,6 +30,21 @@ interface RerouteController {
     fun interruptReroute()
 
     /**
+     * Add a RerouteStateObserver to collection and immediately invoke [rerouteStateObserver] with current
+     * re-route state.
+     *
+     * @return `true` if the element has been added, `false` if the element is already contained in the collection.
+     */
+    fun addRerouteStateObserver(rerouteStateObserver: RerouteStateObserver): Boolean
+
+    /**
+     * Remove [rerouteStateObserver] from collection of observers/
+     *
+     * @return `true` if the element has been successfully removed; `false` if it was not present in the collection.
+     */
+    fun removeRerouteStateObserver(rerouteStateObserver: RerouteStateObserver): Boolean
+
+    /**
      * Route Callback is useful to set new route(s) on reroute event. Doing the same as
      * [MapboxNavigation.setRoutes].
      */
@@ -40,16 +55,28 @@ interface RerouteController {
          */
         fun onNewRoutes(routes: List<DirectionsRoute>)
     }
+
+    /**
+     * [RerouteState] observer
+     */
+    interface RerouteStateObserver {
+
+        /**
+         * Invoked whenever re-route state has been changed.
+         */
+        fun onNewState(rerouteState: RerouteState)
+    }
 }
 
 /**
  * Reroute process state
  */
-enum class RerouteState {
+sealed class RerouteState {
+
     /**
      * Stared and finished state of Reroute process. Mean that [RerouteController] is idling.
      */
-    IDLE,
+    object Idle : RerouteState()
 
     /**
      * Reroute process has been interrupted.
@@ -58,21 +85,22 @@ enum class RerouteState {
      * - [RerouteController.interruptReroute];
      * - the NavSdk internally if another route request has been requested(only for the default
      * implementation, see [MapboxRerouteController]).
+     *
      */
-    INTERRUPTED,
+    object Interrupted : RerouteState()
 
     /**
      * A request of new route has been failed.
      */
-    FAILED,
+    data class Failed(val message: String, val throwable: Throwable? = null) : RerouteState()
 
     /**
      * Route fetching is in progress.
      */
-    FETCHING_ROUTE,
+    object FetchingRoute : RerouteState()
 
     /**
      * Route has been fetched.
      */
-    ROUTE_HAS_BEEN_FETCHED
+    object RouteHasBeenFetched : RerouteState()
 }

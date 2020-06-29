@@ -282,6 +282,7 @@ constructor(
         routeOptions: RouteOptions,
         routesRequestCallback: RoutesRequestCallback? = null
     ) {
+        stopInternalRouteFetching()
         directionsSession.requestRoutes(routeOptions, routesRequestCallback)
     }
 
@@ -298,6 +299,7 @@ constructor(
      * @param routes a list of [DirectionsRoute]s
      */
     fun setRoutes(routes: List<DirectionsRoute>) {
+        stopInternalRouteFetching()
         directionsSession.routes = routes
     }
 
@@ -600,6 +602,10 @@ constructor(
 
     private fun interruptReroute() {
         rerouteController.interruptReroute()
+    }
+
+    private fun stopInternalRouteFetching() {
+        interruptReroute()
     }
 
     private fun obtainUserAgent(isFromNavigationUi: Boolean): String {

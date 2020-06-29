@@ -142,7 +142,7 @@ class MapboxNavigationTest {
 
         mapboxNavigation = MapboxNavigation(navigationOptions)
 
-        rerouteController = mockk(relaxed = true, relaxUnitFun = true)
+        rerouteController = mockk(relaxUnitFun = true)
         mapboxNavigation.setRerouteController(rerouteController)
     }
 
@@ -351,6 +351,20 @@ class MapboxNavigationTest {
         }
 
         verify { tripSession.route = null }
+    }
+
+    @Test
+    fun interrupt_reroute_on_route_request() {
+        mapboxNavigation.requestRoutes(mockk())
+
+        verify(exactly = 1) { rerouteController.interruptReroute() }
+    }
+
+    @Test
+    fun interrupt_reroute_on_set_routes() {
+        mapboxNavigation.setRoutes(mockk())
+
+        verify(exactly = 1) { rerouteController.interruptReroute() }
     }
 
     private fun mockLocation() {

@@ -17,6 +17,7 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -43,6 +44,9 @@ class MapboxRerouteControllerTest {
     @MockK
     private lateinit var routeCallback: RerouteController.RoutesCallback
 
+    @MockK
+    lateinit var primaryRerouteObserver: RerouteController.RerouteStateObserver
+
     @Before
     fun setup() {
         MockKAnnotations.init(this, relaxUnitFun = true, relaxed = true)
@@ -58,22 +62,31 @@ class MapboxRerouteControllerTest {
 
     @After
     fun cleanUp() {
-        assertEquals(RerouteState.IDLE, rerouteController.rerouteState)
+        assertEquals(RerouteState.Idle, rerouteController.rerouteState)
         // routeCallback mustn't called in current implementation. DirectionSession update routes internally
         verify(exactly = 0) { routeCallback.onNewRoutes(any()) }
     }
 
     @Test
     fun initial_state() {
-        assertEquals(rerouteController.rerouteState, RerouteState.IDLE)
+        assertEquals(rerouteController.rerouteState, RerouteState.Idle)
         verify(exactly = 0) { rerouteController.rerouteState = any() }
         verify(exactly = 0) { rerouteController.reroute(any()) }
         verify(exactly = 0) { rerouteController.interruptReroute() }
     }
 
     @Test
+    fun initial_state_with_added_state_observer() {
+        val added = addRerouteStateObserver()
+
+        assertTrue("RerouteStateObserver is not added", added)
+        verify(exactly = 1) { primaryRerouteObserver.onNewState(RerouteState.Idle) }
+    }
+
+    @Test
     fun reroute_success() {
         mockNewRouteOptions()
+        addRerouteStateObserver()
         val routeRequestCallback = slot<RoutesRequestCallback>()
         every {
             directionsSession.requestRoutes(
@@ -87,24 +100,40 @@ class MapboxRerouteControllerTest {
 
         assertTrue(routeRequestCallback.isCaptured)
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.FETCHING_ROUTE
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.ROUTE_HAS_BEEN_FETCHED
+            primaryRerouteObserver.onNewState(RerouteState.RouteHasBeenFetched)
+        }
+        verify(exactly = 2) {
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+        }
+        verifyOrder {
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onNewState(RerouteState.RouteHasBeenFetched)
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
         }
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.IDLE
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.RouteHasBeenFetched
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.Idle
         }
         verify(ordering = Ordering.ORDERED) {
-            rerouteController.rerouteState = RerouteState.FETCHING_ROUTE
-            rerouteController.rerouteState = RerouteState.ROUTE_HAS_BEEN_FETCHED
-            rerouteController.rerouteState = RerouteState.IDLE
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+            rerouteController.rerouteState = RerouteState.RouteHasBeenFetched
+            rerouteController.rerouteState = RerouteState.Idle
         }
     }
 
     @Test
     fun reroute_unsuccess() {
         mockNewRouteOptions()
+        addRerouteStateObserver()
         val routeRequestCallback = slot<RoutesRequestCallback>()
         every {
             directionsSession.requestRoutes(routeOptions, capture(routeRequestCallback))
@@ -115,24 +144,40 @@ class MapboxRerouteControllerTest {
 
         assertTrue(routeRequestCallback.isCaptured)
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.FETCHING_ROUTE
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.FAILED
+            primaryRerouteObserver.onNewState(ofType<RerouteState.Failed>())
+        }
+        verify(exactly = 2) {
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+        }
+        verifyOrder {
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onNewState(ofType<RerouteState.Failed>())
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
         }
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.IDLE
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = ofType<RerouteState.Failed>()
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.Idle
         }
         verify(ordering = Ordering.ORDERED) {
-            rerouteController.rerouteState = RerouteState.FETCHING_ROUTE
-            rerouteController.rerouteState = RerouteState.FAILED
-            rerouteController.rerouteState = RerouteState.IDLE
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+            rerouteController.rerouteState = ofType<RerouteState.Failed>()
+            rerouteController.rerouteState = RerouteState.Idle
         }
     }
 
     @Test
     fun reroute_request_canceled_external() {
         mockNewRouteOptions()
+        addRerouteStateObserver()
         val routeRequestCallback = slot<RoutesRequestCallback>()
         every {
             directionsSession.requestRoutes(routeOptions, capture(routeRequestCallback))
@@ -143,24 +188,40 @@ class MapboxRerouteControllerTest {
 
         assertTrue(routeRequestCallback.isCaptured)
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.FETCHING_ROUTE
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.INTERRUPTED
+            primaryRerouteObserver.onNewState(RerouteState.Interrupted)
         }
-        verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.IDLE
+        verify(exactly = 2) {
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
         }
         verifyOrder {
-            rerouteController.rerouteState = RerouteState.FETCHING_ROUTE
-            rerouteController.rerouteState = RerouteState.INTERRUPTED
-            rerouteController.rerouteState = RerouteState.IDLE
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onNewState(RerouteState.Interrupted)
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.Interrupted
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.Idle
+        }
+        verifyOrder {
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+            rerouteController.rerouteState = RerouteState.Interrupted
+            rerouteController.rerouteState = RerouteState.Idle
         }
     }
 
     @Test
     fun interrupt_route_request() {
         mockNewRouteOptions()
+        addRerouteStateObserver()
         val routeRequestCallback = slot<RoutesRequestCallback>()
         every {
             directionsSession.requestRoutes(routeOptions, capture(routeRequestCallback))
@@ -176,29 +237,88 @@ class MapboxRerouteControllerTest {
 
         assertTrue(routeRequestCallback.isCaptured)
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.FETCHING_ROUTE
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.INTERRUPTED
+            primaryRerouteObserver.onNewState(RerouteState.Interrupted)
         }
-        verify(exactly = 1) {
-            rerouteController.rerouteState = RerouteState.IDLE
+        verify(exactly = 2) {
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
         }
         verifyOrder {
-            rerouteController.rerouteState = RerouteState.FETCHING_ROUTE
-            rerouteController.rerouteState = RerouteState.INTERRUPTED
-            rerouteController.rerouteState = RerouteState.IDLE
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onNewState(RerouteState.Interrupted)
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.Interrupted
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.Idle
+        }
+        verifyOrder {
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+            rerouteController.rerouteState = RerouteState.Interrupted
+            rerouteController.rerouteState = RerouteState.Idle
         }
     }
 
     @Test
     fun invalid_route_option() {
         mockNewRouteOptions(null)
+        addRerouteStateObserver()
 
         rerouteController.reroute(routeCallback)
 
-        verify(exactly = 0) { rerouteController.rerouteState = any() }
+        verify(exactly = 1) {
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+        }
+        verify(exactly = 1) {
+            primaryRerouteObserver.onNewState(ofType<RerouteState.Failed>())
+        }
+        verify(exactly = 2) {
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+        }
+        verifyOrder {
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onNewState(ofType<RerouteState.Failed>())
+            primaryRerouteObserver.onNewState(RerouteState.Idle)
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = ofType<RerouteState.Failed>()
+        }
+        verify(exactly = 1) {
+            rerouteController.rerouteState = RerouteState.Idle
+        }
+        verifyOrder {
+            rerouteController.rerouteState = RerouteState.FetchingRoute
+            rerouteController.rerouteState = ofType<RerouteState.Failed>()
+            rerouteController.rerouteState = RerouteState.Idle
+        }
         verify(exactly = 0) { directionsSession.requestRoutes(any(), any()) }
+    }
+
+    @Test
+    fun add_the_same_observer_twice_and_remove_twice() {
+        mockNewRouteOptions()
+
+        assertTrue(addRerouteStateObserver())
+        assertFalse(addRerouteStateObserver())
+
+        assertTrue(rerouteController.removeRerouteStateObserver(primaryRerouteObserver))
+        assertFalse(rerouteController.removeRerouteStateObserver(primaryRerouteObserver))
+    }
+
+    private fun addRerouteStateObserver(rerouteStateObserver: RerouteController.RerouteStateObserver = primaryRerouteObserver): Boolean {
+        return rerouteController.addRerouteStateObserver(rerouteStateObserver)
     }
 
     private fun mockNewRouteOptions(_routeOptions: RouteOptions? = routeOptions) {
