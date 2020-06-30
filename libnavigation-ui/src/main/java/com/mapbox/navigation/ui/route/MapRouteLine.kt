@@ -419,6 +419,21 @@ internal class MapRouteLine(
      * @param directionsRoutes the routes to be represented on the map.
      */
     fun draw(directionsRoutes: List<DirectionsRoute>) {
+        internalDeferredDraw(directionsRoutes, false)
+    }
+
+    internal fun deferredDraw(directionsRoute: DirectionsRoute): DeferredRouteUpdateFun? =
+        deferredDraw(listOf(directionsRoute))
+
+    internal fun deferredDraw(directionsRoutes: List<DirectionsRoute>): DeferredRouteUpdateFun? {
+        internalDeferredDraw(directionsRoutes, true)
+        if (directionsRoutes.isNotEmpty()) {
+            return getDelayDrawFun()
+        }
+        return null
+    }
+
+    private fun internalDeferredDraw(directionsRoutes: List<DirectionsRoute>, deferDraw: Boolean) {
         if (directionsRoutes.isNotEmpty()) {
             clearRouteData()
             this.directionsRoutes.addAll(directionsRoutes)
@@ -430,13 +445,21 @@ internal class MapRouteLine(
                 ThreadController.getMainScopeAndRootJob().scope
             )
             routeFeatureData.addAll(newRouteFeatureData)
-            drawRoutes(newRouteFeatureData)
-            hideRouteLineAtOffset(0f)
-            hideShieldLineAtOffset(0f)
+            if (!deferDraw) {
+                drawRoutes(newRouteFeatureData)
+                hideRouteLineAtOffset(0f)
+                hideShieldLineAtOffset(0f)
+            }
             drawWayPoints()
             updateAlternativeLayersVisibility(alternativesVisible, routeLayerIds)
             updateAllLayersVisibility(allLayersAreVisible)
         }
+    }
+
+    private fun getDelayDrawFun(): DeferredRouteUpdateFun = {
+        hideRouteLineAtOffset(vanishPointOffset)
+        hideShieldLineAtOffset(vanishPointOffset)
+        drawRoutes(routeFeatureData)
     }
 
     /**
@@ -1149,3 +1172,4 @@ internal data class RouteFeatureData(
 )
 
 internal data class RouteLineExpressionData(val offset: Float, val segmentColor: Int)
+internal typealias DeferredRouteUpdateFun = () -> Unit
