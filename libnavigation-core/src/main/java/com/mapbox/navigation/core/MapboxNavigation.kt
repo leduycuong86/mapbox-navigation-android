@@ -148,7 +148,7 @@ constructor(
     /**
      * Reroute controller, by default uses [MapboxRerouteController].
      */
-    var rerouteController: RerouteController
+    private var rerouteController: RerouteController
 
     init {
         ThreadController.init()
@@ -224,6 +224,7 @@ constructor(
             directionsSession,
             tripSession,
             routeOptionsProvider,
+            ThreadController,
             logger
         )
 
@@ -286,7 +287,7 @@ constructor(
         routeOptions: RouteOptions,
         routesRequestCallback: RoutesRequestCallback? = null
     ) {
-        stopInternalRouteFetching()
+        interruptReroute()
         directionsSession.requestRoutes(routeOptions, routesRequestCallback)
     }
 
@@ -303,7 +304,7 @@ constructor(
      * @param routes a list of [DirectionsRoute]s
      */
     fun setRoutes(routes: List<DirectionsRoute>) {
-        stopInternalRouteFetching()
+        interruptReroute()
         directionsSession.routes = routes
     }
 
@@ -346,6 +347,18 @@ constructor(
         ThreadController.cancelAllNonUICoroutines()
         ThreadController.cancelAllUICoroutines()
     }
+
+    /**
+     * Set [RerouteController]. By default uses [MapboxRerouteController]
+     */
+    fun setRerouteController(rerouteController: RerouteController){
+        this.rerouteController = rerouteController
+    }
+
+    /**
+     * Get [RerouteController]
+     */
+    fun getRerouteController(): RerouteController = rerouteController
 
     /**
      * API used to retrieve logged location and route progress samples for debug purposes.
@@ -599,10 +612,6 @@ constructor(
 
     private fun interruptReroute() {
         rerouteController.interrupt()
-    }
-
-    private fun stopInternalRouteFetching() {
-        interruptReroute()
     }
 
     private fun obtainUserAgent(isFromNavigationUi: Boolean): String {

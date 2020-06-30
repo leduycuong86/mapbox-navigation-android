@@ -143,7 +143,7 @@ class MapboxNavigationTest {
         mapboxNavigation = MapboxNavigation(navigationOptions)
 
         rerouteController = mockk(relaxUnitFun = true)
-        mapboxNavigation.rerouteController = rerouteController
+        mapboxNavigation.setRerouteController(rerouteController)
     }
 
     @After

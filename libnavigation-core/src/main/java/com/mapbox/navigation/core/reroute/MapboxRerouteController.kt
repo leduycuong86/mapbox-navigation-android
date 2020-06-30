@@ -9,6 +9,9 @@ import com.mapbox.navigation.core.directions.session.DirectionsSession
 import com.mapbox.navigation.core.directions.session.RoutesRequestCallback
 import com.mapbox.navigation.core.routeoptions.RouteOptionsProvider
 import com.mapbox.navigation.core.trip.session.TripSession
+import com.mapbox.navigation.utils.internal.JobControl
+import com.mapbox.navigation.utils.internal.ThreadController
+import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
@@ -18,10 +21,13 @@ internal class MapboxRerouteController(
     private val directionsSession: DirectionsSession,
     private val tripSession: TripSession,
     private val routeOptionsProvider: RouteOptionsProvider,
+    threadController: ThreadController = ThreadController,
     private val logger: Logger
 ) : RerouteController {
 
     private val observers = CopyOnWriteArraySet<RerouteController.RerouteStateObserver>()
+
+    private val mainJobController: JobControl = threadController.getMainScopeAndRootJob()
 
     @Volatile
     override var state: RerouteState = RerouteState.Idle
@@ -30,7 +36,9 @@ internal class MapboxRerouteController(
                 return
             }
             field = value
-            observers.forEach { it.onRerouteStateChanged(field) }
+            mainJobController.scope.launch {
+                observers.forEach { it.onRerouteStateChanged(field) }
+            }
         }
 
     private companion object {

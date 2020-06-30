@@ -83,6 +83,8 @@ sealed class RerouteState {
      *
      * Might be invoked by:
      * - [RerouteController.interrupt];
+     * - [MapboxNavigation.setRoutes];
+     * - [MapboxNavigation.requestRoutes];
      * - from the SDK internally if another route request has been requested (only when using the default
      * implementation [MapboxRerouteController]).
      *

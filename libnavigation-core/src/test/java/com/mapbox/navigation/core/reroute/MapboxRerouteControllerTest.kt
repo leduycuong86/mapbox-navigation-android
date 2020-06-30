@@ -6,6 +6,8 @@ import com.mapbox.navigation.core.directions.session.DirectionsSession
 import com.mapbox.navigation.core.directions.session.RoutesRequestCallback
 import com.mapbox.navigation.core.routeoptions.RouteOptionsProvider
 import com.mapbox.navigation.core.trip.session.TripSession
+import com.mapbox.navigation.testing.MainCoroutineRule
+import com.mapbox.navigation.utils.internal.ThreadController
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -14,13 +16,16 @@ import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
 import io.mockk.verifyOrder
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class MapboxRerouteControllerTest {
 
     private lateinit var rerouteController: MapboxRerouteController
@@ -46,6 +51,9 @@ class MapboxRerouteControllerTest {
     @MockK
     lateinit var primaryRerouteObserver: RerouteController.RerouteStateObserver
 
+    @get:Rule
+    var coroutineRule = MainCoroutineRule()
+
     @Before
     fun setup() {
         MockKAnnotations.init(this, relaxUnitFun = true, relaxed = true)
@@ -54,6 +62,7 @@ class MapboxRerouteControllerTest {
                 directionsSession,
                 tripSession,
                 routeOptionsProvider,
+                ThreadController,
                 logger
             )
         )
