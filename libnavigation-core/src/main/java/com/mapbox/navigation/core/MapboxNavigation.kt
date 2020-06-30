@@ -146,7 +146,7 @@ constructor(
     private val MAPBOX_NOTIFICATION_ACTION_CHANNEL = "notificationActionButtonChannel"
 
     /**
-     * Reroute controller, be default uses [MapboxRerouteController].
+     * Reroute controller, by default uses [MapboxRerouteController].
      */
     var rerouteController: RerouteController
 

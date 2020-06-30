@@ -7,7 +7,6 @@ import com.mapbox.navigation.core.directions.session.RoutesRequestCallback
 import com.mapbox.navigation.core.routeoptions.RouteOptionsProvider
 import com.mapbox.navigation.core.trip.session.TripSession
 import io.mockk.MockKAnnotations
-import io.mockk.Ordering
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
@@ -70,7 +69,6 @@ class MapboxRerouteControllerTest {
     @Test
     fun initial_state() {
         assertEquals(rerouteController.state, RerouteState.Idle)
-        verify(exactly = 0) { rerouteController.state = any() }
         verify(exactly = 0) { rerouteController.reroute(any()) }
         verify(exactly = 0) { rerouteController.interrupt() }
     }
@@ -80,7 +78,7 @@ class MapboxRerouteControllerTest {
         val added = addRerouteStateObserver()
 
         assertTrue("RerouteStateObserver is not added", added)
-        verify(exactly = 1) { primaryRerouteObserver.onNewState(RerouteState.Idle) }
+        verify(exactly = 1) { primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle) }
     }
 
     @Test
@@ -100,33 +98,19 @@ class MapboxRerouteControllerTest {
 
         assertTrue(routeRequestCallback.isCaptured)
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(RerouteState.RouteHasBeenFetched)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.RouteFetched)
         }
         verify(exactly = 2) {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
         verifyOrder {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
-            primaryRerouteObserver.onNewState(RerouteState.RouteHasBeenFetched)
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.FetchingRoute
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.RouteHasBeenFetched
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.Idle
-        }
-        verify(ordering = Ordering.ORDERED) {
-            rerouteController.state = RerouteState.FetchingRoute
-            rerouteController.state = RerouteState.RouteHasBeenFetched
-            rerouteController.state = RerouteState.Idle
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.RouteFetched)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
     }
 
@@ -144,33 +128,19 @@ class MapboxRerouteControllerTest {
 
         assertTrue(routeRequestCallback.isCaptured)
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(ofType<RerouteState.Failed>())
+            primaryRerouteObserver.onRerouteStateChanged(ofType<RerouteState.Failed>())
         }
         verify(exactly = 2) {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
         verifyOrder {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
-            primaryRerouteObserver.onNewState(ofType<RerouteState.Failed>())
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.FetchingRoute
-        }
-        verify(exactly = 1) {
-            rerouteController.state = ofType<RerouteState.Failed>()
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.Idle
-        }
-        verify(ordering = Ordering.ORDERED) {
-            rerouteController.state = RerouteState.FetchingRoute
-            rerouteController.state = ofType<RerouteState.Failed>()
-            rerouteController.state = RerouteState.Idle
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(ofType<RerouteState.Failed>())
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
     }
 
@@ -188,33 +158,19 @@ class MapboxRerouteControllerTest {
 
         assertTrue(routeRequestCallback.isCaptured)
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(RerouteState.Interrupted)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Interrupted)
         }
         verify(exactly = 2) {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
         verifyOrder {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
-            primaryRerouteObserver.onNewState(RerouteState.Interrupted)
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.FetchingRoute
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.Interrupted
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.Idle
-        }
-        verifyOrder {
-            rerouteController.state = RerouteState.FetchingRoute
-            rerouteController.state = RerouteState.Interrupted
-            rerouteController.state = RerouteState.Idle
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Interrupted)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
     }
 
@@ -237,33 +193,19 @@ class MapboxRerouteControllerTest {
 
         assertTrue(routeRequestCallback.isCaptured)
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(RerouteState.Interrupted)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Interrupted)
         }
         verify(exactly = 2) {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
         verifyOrder {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
-            primaryRerouteObserver.onNewState(RerouteState.Interrupted)
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.FetchingRoute
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.Interrupted
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.Idle
-        }
-        verifyOrder {
-            rerouteController.state = RerouteState.FetchingRoute
-            rerouteController.state = RerouteState.Interrupted
-            rerouteController.state = RerouteState.Idle
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Interrupted)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
     }
 
@@ -275,33 +217,19 @@ class MapboxRerouteControllerTest {
         rerouteController.reroute(routeCallback)
 
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
         }
         verify(exactly = 1) {
-            primaryRerouteObserver.onNewState(ofType<RerouteState.Failed>())
+            primaryRerouteObserver.onRerouteStateChanged(ofType<RerouteState.Failed>())
         }
         verify(exactly = 2) {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
         verifyOrder {
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-            primaryRerouteObserver.onNewState(RerouteState.FetchingRoute)
-            primaryRerouteObserver.onNewState(ofType<RerouteState.Failed>())
-            primaryRerouteObserver.onNewState(RerouteState.Idle)
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.FetchingRoute
-        }
-        verify(exactly = 1) {
-            rerouteController.state = ofType<RerouteState.Failed>()
-        }
-        verify(exactly = 1) {
-            rerouteController.state = RerouteState.Idle
-        }
-        verifyOrder {
-            rerouteController.state = RerouteState.FetchingRoute
-            rerouteController.state = ofType<RerouteState.Failed>()
-            rerouteController.state = RerouteState.Idle
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.FetchingRoute)
+            primaryRerouteObserver.onRerouteStateChanged(ofType<RerouteState.Failed>())
+            primaryRerouteObserver.onRerouteStateChanged(RerouteState.Idle)
         }
         verify(exactly = 0) { directionsSession.requestRoutes(any(), any()) }
     }
@@ -313,12 +241,12 @@ class MapboxRerouteControllerTest {
         assertTrue(addRerouteStateObserver())
         assertFalse(addRerouteStateObserver())
 
-        assertTrue(rerouteController.removeRerouteStateObserver(primaryRerouteObserver))
-        assertFalse(rerouteController.removeRerouteStateObserver(primaryRerouteObserver))
+        assertTrue(rerouteController.unregisterRerouteStateObserver(primaryRerouteObserver))
+        assertFalse(rerouteController.unregisterRerouteStateObserver(primaryRerouteObserver))
     }
 
     private fun addRerouteStateObserver(rerouteStateObserver: RerouteController.RerouteStateObserver = primaryRerouteObserver): Boolean {
-        return rerouteController.addRerouteStateObserver(rerouteStateObserver)
+        return rerouteController.registerRerouteStateObserver(rerouteStateObserver)
     }
 
     private fun mockNewRouteOptions(_routeOptions: RouteOptions? = routeOptions) {

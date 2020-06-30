@@ -20,10 +20,10 @@ internal class MapboxRouteOptionsProvider(
     }
 
     /**
-     * Provide a new instance *RouteOptions* based on initial *RouteOptions*, *RouteProgress* and
+     * Provides a new instance of *RouteOptions* based on initial *RouteOptions*, *RouteProgress* and
      * current *Location*
      *
-     * Return *null* in case if cannot combine a new [RouteOptions] instance base on input.
+     * Returns *null* if a new [RouteOptions] instance cannot be combined based on the input given.
      */
     override fun update(
         routeOptions: RouteOptions?,

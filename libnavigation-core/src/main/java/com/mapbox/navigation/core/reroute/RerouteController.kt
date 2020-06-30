@@ -5,27 +5,27 @@ import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.trip.session.OffRouteObserver
 
 /**
- * Reroute controller allow change reroute logic externally. Use [MapboxNavigation.setRerouteController]
- * to replace that logic.
+ * Reroute controller allows changing the reroute logic externally. Use [MapboxNavigation.rerouteController]
+ * to replace it.
  */
 interface RerouteController {
 
     /**
-     * State of Reroute process
+     * Reroute state
      */
     val state: RerouteState
 
     /**
-     * Invoked whenever re-route is needed. For instance when a driver is off route. Called just after
-     * an off route event.
+     * Invoked whenever re-route is needed. For instance when a driver is off-route. Called just after
+     * an off-route event.
      *
      * @see [OffRouteObserver]
      */
     fun reroute(routesCallback: RoutesCallback)
 
     /**
-     * Invoked when re-route is not needed anymore (for instance when driver returned to previous route).
-     * Might be ignored depends on [RerouteState] (when route has been fetched no sense to interrupt re-route)
+     * Invoked when re-route is not needed anymore (for instance when driver returns to previous route).
+     * Might be ignored depending on [RerouteState] e.g. if a route has been fetched it does not make sense to interrupt re-routing
      */
     fun interrupt()
 
@@ -35,14 +35,14 @@ interface RerouteController {
      *
      * @return `true` if the element has been added, `false` if the element is already contained in the collection.
      */
-    fun addRerouteStateObserver(rerouteStateObserver: RerouteStateObserver): Boolean
+    fun registerRerouteStateObserver(rerouteStateObserver: RerouteStateObserver): Boolean
 
     /**
-     * Remove [rerouteStateObserver] from collection of observers/
+     * Remove [rerouteStateObserver] from collection of observers.
      *
      * @return `true` if the element has been successfully removed; `false` if it was not present in the collection.
      */
-    fun removeRerouteStateObserver(rerouteStateObserver: RerouteStateObserver): Boolean
+    fun unregisterRerouteStateObserver(rerouteStateObserver: RerouteStateObserver): Boolean
 
     /**
      * Route Callback is useful to set new route(s) on reroute event. Doing the same as
@@ -50,7 +50,7 @@ interface RerouteController {
      */
     interface RoutesCallback {
         /**
-         * Called whenever new route(s) has been found.
+         * Called whenever new route(s) has been fetched.
          * @see [MapboxNavigation.setRoutes]
          */
         fun onNewRoutes(routes: List<DirectionsRoute>)
@@ -62,9 +62,9 @@ interface RerouteController {
     interface RerouteStateObserver {
 
         /**
-         * Invoked whenever re-route state has been changed.
+         * Invoked whenever re-route state has changed.
          */
-        fun onNewState(rerouteState: RerouteState)
+        fun onRerouteStateChanged(rerouteState: RerouteState)
     }
 }
 
@@ -74,23 +74,23 @@ interface RerouteController {
 sealed class RerouteState {
 
     /**
-     * Stared and finished state of Reroute process. Mean that [RerouteController] is idling.
+     * [RerouteController] is idle.
      */
     object Idle : RerouteState()
 
     /**
-     * Reroute process has been interrupted.
+     * Reroute has been interrupted.
      *
      * Might be invoked by:
      * - [RerouteController.interrupt];
-     * - the NavSdk internally if another route request has been requested(only for the default
-     * implementation, see [MapboxRerouteController]).
+     * - from the SDK internally if another route request has been requested (only when using the default
+     * implementation [MapboxRerouteController]).
      *
      */
     object Interrupted : RerouteState()
 
     /**
-     * A request of new route has been failed.
+     * Re-route request has failed.
      */
     data class Failed(val message: String, val throwable: Throwable? = null) : RerouteState()
 
@@ -102,5 +102,5 @@ sealed class RerouteState {
     /**
      * Route has been fetched.
      */
-    object RouteHasBeenFetched : RerouteState()
+    object RouteFetched : RerouteState()
 }

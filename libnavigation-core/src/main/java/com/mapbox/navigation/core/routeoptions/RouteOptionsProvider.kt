@@ -10,15 +10,15 @@ import com.mapbox.navigation.core.trip.session.OffRouteObserver
  * Provider is used for *Reroute* and *Faster Route* flow.
  *
  * It's used every time when turn-by-turn navigation goes out of the route (see [OffRouteObserver])
- * and when need to find faster route (see [FasterRouteController]).
+ * and when needs to find faster route (see [FasterRouteController]).
  */
 internal interface RouteOptionsProvider {
 
     /**
-     * Provide a new instance *RouteOptions* based on *RouteOptions*, *RouteProgress*, and
+     * Provides a new instance *RouteOptions* based on *RouteOptions*, *RouteProgress*, and
      * *Location*
      *
-     * Return *null* in case if cannot combine a new [RouteOptions] instance base on input. When *null*
+     * Returns *null* if a new [RouteOptions] instance cannot be combined based on the input given. When *null*
      * is returned new route is not fetched
      */
     fun update(
