@@ -57,12 +57,18 @@ internal class MapboxRerouteController(
             tripSession.getRouteProgress(),
             tripSession.getEnhancedLocation()
         )
-            ?.let { routeOptions ->
-                request(routeOptions)
-            }
-            ?: run {
-                state = RerouteState.Failed("Cannot combine route options")
-                state = RerouteState.Idle
+            .let { routeOptionsResult ->
+                when (routeOptionsResult) {
+                    is RouteOptionsProvider.RouteOptionsResult.Success ->
+                        request(routeOptionsResult.routeOptions)
+                    is RouteOptionsProvider.RouteOptionsResult.Error -> {
+                        state = RerouteState.Failed(
+                            "Cannot combine route options", routeOptionsResult.error
+                        )
+                        state = RerouteState.Idle
+                    }
+                }
+
             }
     }
 

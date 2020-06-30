@@ -56,8 +56,16 @@ internal class FasterRouteController(
             tripSession.getRouteProgress(),
             tripSession.getEnhancedLocation()
         )
-            ?.let { routeOptions ->
-                directionsSession.requestFasterRoute(routeOptions, fasterRouteRequestCallback)
+            .let { routeOptionsResult ->
+                when (routeOptionsResult) {
+                    is RouteOptionsProvider.RouteOptionsResult.Success ->
+                        directionsSession.requestFasterRoute(
+                            routeOptionsResult.routeOptions,
+                            fasterRouteRequestCallback
+                        )
+                    is RouteOptionsProvider.RouteOptionsResult.Error -> Unit
+                }
+
             }
     }
 

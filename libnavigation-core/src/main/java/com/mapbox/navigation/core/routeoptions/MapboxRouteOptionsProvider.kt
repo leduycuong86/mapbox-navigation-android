@@ -29,14 +29,15 @@ internal class MapboxRouteOptionsProvider(
         routeOptions: RouteOptions?,
         routeProgress: RouteProgress?,
         location: Location?
-    ): RouteOptions? {
+    ): RouteOptionsProvider.RouteOptionsResult {
         if (routeOptions == null || routeProgress == null || location == null) {
+            val msg = "Cannot combine RouteOptions, invalid inputs. *routeOptions*, " +
+                "*routeProgress*, and *location* mustn't be null"
             logger.w(
                 Tag("MapboxRouteOptionsProvider"),
-                Message("Cannot combine RouteOptions, invalid inputs. *routeOptions*, " +
-                    "*routeProgress*, and *location* mustn't be null")
+                Message(msg)
             )
-            return null
+            return RouteOptionsProvider.RouteOptionsResult.Error(Throwable(msg))
         }
 
         val optionsBuilder = routeOptions.toBuilder()
@@ -126,6 +127,6 @@ internal class MapboxRouteOptionsProvider(
                 })
         }
 
-        return optionsBuilder.build()
+        return RouteOptionsProvider.RouteOptionsResult.Success(optionsBuilder.build())
     }
 }

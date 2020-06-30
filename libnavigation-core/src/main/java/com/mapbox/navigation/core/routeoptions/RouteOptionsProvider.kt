@@ -25,5 +25,10 @@ internal interface RouteOptionsProvider {
         routeOptions: RouteOptions?,
         routeProgress: RouteProgress?,
         location: Location?
-    ): RouteOptions?
+    ): RouteOptionsResult
+
+    sealed class RouteOptionsResult {
+        data class Success(val routeOptions: RouteOptions) : RouteOptionsResult()
+        data class Error(val error: Throwable) : RouteOptionsResult()
+    }
 }
